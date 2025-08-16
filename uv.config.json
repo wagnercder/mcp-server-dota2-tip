@@ -1,0 +1,7 @@
+{
+  "toolchains": {
+    "mcp": {
+      "url": "http://localhost:4242"
+    }
+  }
+}
