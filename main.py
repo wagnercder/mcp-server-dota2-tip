@@ -13,9 +13,10 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-logging.info("Starting Dota2HelperServer...")
-DOTABUFF_URL = "https://www.dotabuff.com/heroes"
-ABSOLUTE_PATH = os.path.abspath(os.path.dirname(__file__))
+logger.info("Starting Dota2HelperServer...")
+
+ABSOLUTE_PATH = f"{os.path.abspath(os.path.dirname(__file__))}/assets"
+HERO_ICONS_DIR = f"{ABSOLUTE_PATH}/hero_icons"
 
 session = dotabase_session()
 
@@ -41,10 +42,13 @@ async def get_heroes_icons_list() -> list[str]:
             can be retrieved using the `get_heroes_available` tool.
     """
     logger.info(f"Retrieved all hero icon paths")
-    return os.listdir(f"{ABSOLUTE_PATH}/assets/hero_icons")
+    return os.listdir(HERO_ICONS_DIR)
 
 
-@mcp.tool(title="Get Hero Icon", annotations={"readOnlyHint": True})
+@mcp.resource(
+    uri=f"file://{HERO_ICONS_DIR}/{'{file_name}'}",
+    title="Provide an icon from a specific file name",
+)
 async def get_hero_icon(file_name: str) -> str | None:
     """Get specific icon from a heroe to add to any generated report  by
     `get_hero_resume`.
@@ -52,11 +56,13 @@ async def get_hero_icon(file_name: str) -> str | None:
     Args:
         file_name: name from file retrieved from `get_heroes_icons_list`
     """
-    full_path = os.path.join(f"{ABSOLUTE_PATH}/assets/hero_icons", file_name)
-    if os.path.isfile(full_path):
-        with open(full_path, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode("utf-8")
-            return encoded
+    full_path = os.path.join(HERO_ICONS_DIR, file_name)
+    if not os.path.isfile(full_path):
+        return None
+
+    with open(full_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
     return "Could not find the icon file, please check the name provided."
 
 
@@ -70,15 +76,9 @@ async def get_hero_resume(hero_name: str) -> dict:
     It can be used to generate a report or provide quick information
     about a specific hero.
 
-    Whenever a hero is returned it will also return the hero's icon
-    in base64 format, so it can be used in a report.
-
-    The MCP Client should ask later what is the purpose of the report,
-    if they want to know wich heroes are good against the hero,
-    or if they want to know the hero's win rate and pick rate.
-
-    The information of a build to counter another hero should be provided
-    by the LLM.
+    Whenever a hero is returned it should also return the hero's icon
+    in base64 format, so it can be used in a report. Only do this if
+    the hero icon can be rendered in the client side directly.
 
     Args:
         hero_name: Name of the Dota 2 hero, the complete list of heroes
@@ -94,27 +94,18 @@ async def get_hero_resume(hero_name: str) -> dict:
 
 @mcp.prompt()
 def to_ask_after_resume(hero_name: str) -> list[base.Message]:
-    """Debug prompt for PDF issues.
-
-    This prompt helps the user by suggesting the right questions after
-    the resume is provided.
+    """Prompt to provide further questions over the report.
 
     Args:
-        hero_name: name from the hero
+        hero_name: name from hero
     """
     return [
         base.Message(
             role="user",
             content=[
-                base.TextContent(
-                    text=f"What heroes are good against {hero_name}?"
-                ),
-                base.TextContent(
-                    text=f"What heroes are countered by {hero_name}?"
-                ),
-                base.TextContent(
-                    text=f"What are the core items for {hero_name}?"
-                )
+                base.TextContent(text=f"What heroes are good against {hero_name}?"),
+                base.TextContent(text=f"What heroes are countered by {hero_name}?"),
+                base.TextContent(text=f"What are the core items for {hero_name}?"),
             ],
         )
     ]
@@ -130,6 +121,6 @@ async def get_heroes_available() -> list[str]:
 
 if __name__ == "__main__":
     try:
-        mcp.run(port=5000)
+        mcp.run(transport='tcp', host='0.0.0.0', port=5000)
     except Exception as e:
         logger.error(f"Failed to start MCP server: {e}")
