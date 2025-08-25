@@ -1,28 +1,38 @@
-# Dota2HelperServer
+# Dota 2 Helper MCP Server
 
-Dota2HelperServer is a FastMCP-powered backend service designed to provide structured data and assets for Dota 2 heroes. It integrates with the Dotabase database to deliver hero metadata, icons, and contextual prompts for building reports or enhancing gameplay insights.
+A Model Context Protocol server that provides Dota 2 game data and statistics using the OpenDota API.
 
-```Well this is merely a prove of concept project creating a MCP server.
+### Installation
 
----
-
-## Features
-
-- Retrieve a hero's name, localized name, and roles from the Dotabase.
-- Access base64-encoded hero icons for use in reports or UI elements.
-- List all available hero icons stored locally.
-- Get a list of all heroes available in the Dotabase.
-
----
-
-## Usage
-
-Make sure you have MCP installed and then to start the server:
+1. Ensure you have Python 3.11+ installed
+2. Install the required dependencies:
 
 ```bash
-make mcp-server
+pip install .
+```
 
-or in case you want to check what tools, resources and prompts are available.
+Run the server with:
 
 ```bash
-make mcp-dev-server
+python main.py
+```
+
+### Available Tools
+1. get_hero_stats(hero_id: int) - Detailed statistics for a specific hero
+
+2. get_match_details(match_id: int) - Full match information
+
+3. get_hero_matchups(hero_id: int) - Matchup analysis (good/bad against)
+
+4. get_all_items() - List of all Dota 2 items
+
+5. get_hero_item_popularity(hero_id: int) - Item popularity by game stage
+
+6. get_heroes_available() - Complete hero catalog
+
+### API Data Source
+This server uses the OpenDota API to provide real-time Dota 2 statistics and match data.
+
+⚠️ Important Note
+This project is a proof of concept and is intended for demonstration purposes only. It may not be suitable for production use and the API responses are dependent on the OpenDota service availability and rate limits.
+
